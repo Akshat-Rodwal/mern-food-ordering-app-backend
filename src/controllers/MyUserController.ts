@@ -1,30 +1,26 @@
-import { Request , Response } from "express";
+import { Request, Response } from "express";
 import User from "../models/user";
 
-const getCurrentUser = async (req : Request , res : Response) => {
+const getCurrentUser = async (req: Request, res: Response) => {
     try {
-        const currentUser = await User.findOne({ _id :req.userId});
-        if(!currentUser) {
-            return res.status(404).json({ message : "User not found" });
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser) {
+            return res.status(404).json({ message: "User not found" });
         }
         res.json(currentUser);
     } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message : "Something went wrong" });
+        console.error(error);
+        return res.status(500).json({ message: "Something went wrong" });
     }
-}
+};
 
-const createCurrentUser = async(req:Request , res:Response) => {
-    // 1. check if the user exists
-    // 2. create the user if it doesn't exist
-    // 3. return the user object to the calling client
-
+const createCurrentUser = async (req: Request, res: Response) => {
     try {
-        const {auth0Id} = req.body;
-        const existingUser = await User.findOne({auth0Id});
+        const { auth0Id } = req.body;
+        const existingUser = await User.findOne({ auth0Id });
 
-        if(existingUser) {
-            return res.status(200).send();
+        if (existingUser) {
+            return res.status(200).json(existingUser.toObject());
         }
 
         const newUser = new User(req.body);
@@ -32,35 +28,36 @@ const createCurrentUser = async(req:Request , res:Response) => {
 
         res.status(201).json(newUser.toObject());
     } catch (error) {
-        console.log(error);
-        res.status(500).json({message: "Error creating user"})
+        console.error(error);
+        res.status(500).json({ message: "Error creating user" });
     }
-}
+};
 
-const updateCurrentUser = async(req: Request, res: Response) => {
+const updateCurrentUser = async (req: Request, res: Response) => {
     try {
-const { name, addressLine1, country, city } = req.body;
-const user = await User.findById(req.userId);
+        const { name, addressLine1, country, city } = req.body;
+        const user = await User.findById(req.userId);
 
-if(!user) {
-    return res.status(404).json({ message: "User not found" });
-}
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
 
-user.name = name;
-user.addressLine1 = addressLine1;
-user.city = city;
-user.country = country
+        user.name = name || user.name;
+        user.addressLine1 = addressLine1 || user.addressLine1;
+        user.city = city || user.city;
+        user.country = country || user.country;
 
-await user.save();
+        await user.save();
 
-res.send(user);
-} catch (error) {
-console.log(error);
-res.status(500).json({message: "Error updating user"});
+        res.json(user.toObject());
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error updating user" });
     }
-}
+};
+
 export default {
     getCurrentUser,
     createCurrentUser,
     updateCurrentUser,
-}
+};
